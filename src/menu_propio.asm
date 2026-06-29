@@ -16,40 +16,50 @@ DEFAULT ABS
 %INCLUDE "libBareMetal.asm"
 
 start:					; Start of program label
-	lea rsi, [rel menu] ;hello_message]	; Load RSI with the relative memory address of string, lea ocupa menos y da menos errores que mov
-	mov ecx, menu.len ;len_menu ;variable constante numero de caracteres, Output 
+	lea rsi, [rel menu] ; Load RSI with the relative memory address of string, lea ocupa menos y da menos errores que mov
+	mov ecx, menu.len ;variable constante numero de caracteres, Output 
 	call [b_output]			; Print the string that RSI points to
 
-    xor bl, bl ; borramos bl para guardar primer caracter entrada
+    xor bl, bl ; inicializamos bl para borrar la opcion anterior
 
 ; NO muestra otro caracter en pantalla que no sean los indicados
-; TODO: hay que borrar de bl cada vez que se ejecuta la opcion
 sondeo_polling_teclado:
     call [b_input]
 
     ;********* early exit / guard clause ********
-    test al, al ; mejor que cmp al, 0. Ahorra ciclos de reloj
-    jz sondeo_polling_teclado ; si no ha habido entrada de teclado al=0 
+    test al, al ; si no ha habido entrada de teclado al=0. Mejor que cmp al, 0. Ahorra ciclos de reloj
+    jz sondeo_polling_teclado 
 
     cmp al, 0x1C ; es Intro? NO scancode 0x0D (Ascii)
     je ejecuta_opcion
 
     cmp al, 0x0E			; Backspace / retroceso
 	je ui_input_backspace
+    ;***** fin early exit / guard clause ******
+
+    ;***** confirmacion visual caracter ****** 
+    mov [rel caracter_introducido], al
+    lea rsi, [rel caracter_introducido]
+    mov ecx, 1 ; 1 SOLO caracter
+    call [b_output]
+    ;*** fin confirmacion visual caracter ****
 
     ;or al, 00100000b		; convierte a minuscula, SOLO para q
 
     cmp al, "1"
-    je guarda_opcion
+    je guarda_opcion ;NO mov bl, al. Hay que volver (jmp) a sondeo_polling_teclado
     
     cmp al, "2"
     je guarda_opcion
 
+    ;***** mayus / minus ******
     cmp al, "Q"
     je guarda_opcion
-
     cmp al, "q"
     je guarda_opcion
+    ;*** fin mayus / minus ****
+
+    
 
     jmp sondeo_polling_teclado ;NO start
 
@@ -92,13 +102,7 @@ output_char:
 ;*************** fin borra caracter ***************
 
 guarda_opcion: ;caracter
-    mov bl, al
-
-    ;***** confirmacion visual caracter ******
-    mov [rel caracter_introducido], al
-    lea rsi, [rel caracter_introducido]
-    mov ecx, 1 ; 1 SOLO caracter
-    call [b_output]
+    mov bl, al ; al -> bl
 
     jmp sondeo_polling_teclado ;NO start
 
@@ -109,12 +113,20 @@ ejecuta_opcion: ; caracter guardado
     cmp bl, "2"
     je opcion1
 
-    ;******* sal *******
+    ;***** sal *****
     cmp bl, "Q"
     je sal ; NO ret
-
     cmp bl, "q"
     je sal ; NO ret
+    ;*** fin sal ****
+
+    ;*** mensaje error *** 
+    lea rsi, [rel error]
+    mov ecx, error.len
+    call [b_output]
+    ;** fin mensaje error **
+
+    jmp start ;NO sondeo_polling_teclado
 
 ;********** Opciones *********
 opcion:
@@ -141,8 +153,11 @@ msg:  db 10, "Opcion 1", 10, 0
 .len: equ $ -msg  -1 ; quitamos caracter nulo espacio inicial siguiente linea
 
 msg1: db 10, "Opcion 2", 10, 0
-.len: equ $ -msg1 -1 ; quitamos caracter nulo espacio inicial siguiente linea
+.len: equ $ -msg1 -1 
 
 caracter_introducido: db 0
 
 tchar: db 0                   ; Variable necesaria para que output_char funcione
+
+error: db 10, "E: opcion no disponible", 10, 0 
+.len: equ $ -error -1 
