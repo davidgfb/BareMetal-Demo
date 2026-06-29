@@ -20,7 +20,7 @@ start:					; Start of program label
 	mov ecx, menu.len ;variable constante numero de caracteres, Output 
 	call [b_output]			; Print the string that RSI points to
 
-    xor bl, bl ; inicializamos bl para borrar la opcion anterior
+    xor al, al ; inicializamos al para borrar la opcion anterior
 
 ; NO muestra otro caracter en pantalla que no sean los indicados
 sondeo_polling_teclado:
@@ -31,7 +31,7 @@ sondeo_polling_teclado:
     jz sondeo_polling_teclado 
 
     cmp al, 0x1C ; es Intro? NO scancode 0x0D (Ascii)
-    je ejecuta_opcion
+    je valida_opcion ;ejecuta_opcion
 
     cmp al, 0x0E			; Backspace / retroceso
 	je ui_input_backspace
@@ -46,20 +46,20 @@ sondeo_polling_teclado:
 
     ;or al, 00100000b		; convierte a minuscula, SOLO para q
 
-    cmp al, "1"
-    je guarda_opcion ;NO mov bl, al. Hay que volver (jmp) a sondeo_polling_teclado
+    ;cmp al, "1"
+    ;je guarda_opcion ;NO mov bl, al. Hay que volver (jmp) a sondeo_polling_teclado
     
-    cmp al, "2"
-    je guarda_opcion
+    ;cmp al, "2"
+    ;je guarda_opcion
 
     ;***** mayus / minus ******
-    cmp al, "Q"
-    je guarda_opcion
-    cmp al, "q"
-    je guarda_opcion
+    ;cmp al, "Q"
+    ;je guarda_opcion
+    ;cmp al, "q"
+    ;je guarda_opcion
     ;*** fin mayus / minus ****
 
-    
+    mov bl, al ; guardamos el caracter introducido 
 
     jmp sondeo_polling_teclado ;NO start
 
@@ -101,13 +101,13 @@ output_char:
 ; -----------------------------------------------------------------------------
 ;*************** fin borra caracter ***************
 
-guarda_opcion: ;caracter
-    mov bl, al ; al -> bl
+;guarda_opcion: ;caracter
+;    mov bl, al ; al -> bl
 
-    jmp sondeo_polling_teclado ;NO start
+;    jmp sondeo_polling_teclado ;NO start
 
-ejecuta_opcion: ; caracter guardado
-    cmp bl, "1" ;cmp [rel caracter_introducido], "1" es mas caro
+valida_opcion: ;ejecuta_opcion: ; caracter guardado
+    cmp bl, "1" ;cmp [rel caracter_introducido], "1" es mas caro. NO comparo con al porque SIEMPRE será intro (0x1C)
     je opcion
     
     cmp bl, "2"
